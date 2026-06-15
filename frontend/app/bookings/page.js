@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+import { BASE_URL } from "../../global.js";
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
@@ -35,7 +34,7 @@ export default function BookingsPage() {
     setRescheduleId(null);
 
     try {
-      const res = await fetch(`${API}/api/bookings?email=${encodeURIComponent(email)}`);
+      const res = await fetch(`${BASE_URL}/api/bookings?email=${encodeURIComponent(email)}`);
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || "Failed to load bookings");
@@ -51,7 +50,7 @@ export default function BookingsPage() {
 
   async function handleCancel(id) {
     try {
-      const res = await fetch(`${API}/api/bookings/${id}/cancel`, { method: "PATCH" });
+      const res = await fetch(`${BASE_URL}/api/bookings/${id}/cancel`, { method: "PATCH" });
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
@@ -84,7 +83,7 @@ export default function BookingsPage() {
     if (!booking) return;
 
     try {
-      const res = await fetch(`${API}/api/bookings/${id}/reschedule`, {
+      const res = await fetch(`${BASE_URL}/api/bookings/${id}/reschedule`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

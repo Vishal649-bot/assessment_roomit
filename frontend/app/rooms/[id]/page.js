@@ -3,8 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+import { BASE_URL } from "../../../global.js";
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
@@ -55,7 +54,7 @@ export default function RoomPage() {
     setError("");
     try {
       const res = await fetch(
-        `${API}/api/rooms/${id}/availability?date=${selectedDate}&_=${Date.now()}`,
+        `${BASE_URL}/api/rooms/${id}/availability?date=${selectedDate}&_=${Date.now()}`,
         { cache: "no-store" }
       );
       if (!res.ok) throw new Error("Failed to load availability");
@@ -148,7 +147,7 @@ export default function RoomPage() {
     setSubmitting(true);
 
     try {
-      const res = await fetch(`${API}/api/bookings`, {
+      const res = await fetch(`${BASE_URL}/api/bookings`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

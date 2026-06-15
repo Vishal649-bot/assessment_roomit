@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+import { BASE_URL } from "../global.js";
 
 export default function HomePage() {
   const [rooms, setRooms] = useState([]);
@@ -11,7 +10,7 @@ export default function HomePage() {
   const [error, setError] = useState("");
   
   useEffect(() => {
-    fetch(`${API}/api/rooms`)
+    fetch(`${BASE_URL}/api/rooms`)
       .then((res) => {
         if (!res.ok) throw new Error("Failed to load rooms");
         return res.json();
