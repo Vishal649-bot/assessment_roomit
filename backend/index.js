@@ -12,6 +12,23 @@ const MAX_DAILY_MINUTES = 240;
 app.use(cors());
 app.use(express.json());
 
+const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/roomit";
+
+async function connectDB() {
+  if (mongoose.connection.readyState >= 1) return;
+  await mongoose.connect(MONGODB_URI);
+}
+
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    console.error("MongoDB connection failed:", err);
+    res.status(500).json({ error: "Database connection failed" });
+  }
+});
+
 function toMin(t) {
   const [h, m] = t.split(":").map(Number);
   return h * 60 + m;
@@ -496,10 +513,13 @@ app.patch("/api/bookings/:id/reschedule", async (req, res) => {
 
 app.use((req, res) => res.status(404).json({ error: "Route not found" }));
 
-mongoose
-  .connect(process.env.MONGODB_URI || "mongodb://localhost:27017/roomit")
-  .then(() => app.listen(PORT, () => console.log(`RoomIt API on http://localhost:${PORT}`)))
-  .catch((err) => {
-    console.error("MongoDB connection failed:", err);
-    process.exit(1);
-  });
+export default app;
+
+if (!process.env.VERCEL) {
+  connectDB()
+    .then(() => app.listen(PORT, () => console.log(`RoomIt API on http://localhost:${PORT}`)))
+    .catch((err) => {
+      console.error("MongoDB connection failed:", err);
+      process.exit(1);
+    });
+}
