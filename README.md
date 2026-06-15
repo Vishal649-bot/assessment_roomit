@@ -274,8 +274,3 @@ DailyQuota.findOneAndUpdate(
 - Optionally set `NEXT_PUBLIC_API_URL` to the backend URL (already the default in `global.js`).
 
 ---
-
-## Not implemented (out of scope)
-
-- **4.1** Recurring bookings
-- **4.2** Waitlist
