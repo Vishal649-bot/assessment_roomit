@@ -29,15 +29,19 @@ app.use(async (req, res, next) => {
   }
 });
 
+// Converts time (HH:MM) into total minutes
 function toMin(t) {
   const [h, m] = t.split(":").map(Number);
   return h * 60 + m;
 }
 
+// Calculates duration between start and end time in minutes
 function durationMinutes(startTime, endTime) {
   return toMin(endTime) - toMin(startTime);
 }
 
+
+// Generates all 30-minute slot start times between start and end time
 function getSlotStarts(startTime, endTime) {
   const slots = [];
   for (let t = toMin(startTime); t < toMin(endTime); t += 30) {
@@ -48,15 +52,20 @@ function getSlotStarts(startTime, endTime) {
   return slots;
 }
 
+// Checks if two time ranges overlap with each other
 function rangesOverlap(aStart, aEnd, bStart, bEnd) {
   return aStart < bEnd && aEnd > bStart;
 }
 
+
+// Checks whether the given time is aligned to a 30-minute boundary
 function isAligned30(time) {
   const m = toMin(time);
   return m % 30 === 0;
 }
 
+// Validates booking start and end times
+// Ensures times are on 30-minute intervals and start < end
 function validateTimes(startTime, endTime) {
   if (!isAligned30(startTime) || !isAligned30(endTime)) {
     return "Times must align to 30-minute boundaries (e.g. 09:00, 09:30)";
@@ -67,12 +76,14 @@ function validateTimes(startTime, endTime) {
   return null;
 }
 
+// Converts time into HH:MM format by adding leading zeros if needed
 function normalizeTime(t) {
   if (!t) return t;
   const parts = t.split(":");
   return `${parts[0].padStart(2, "0")}:${parts[1].padStart(2, "0")}`;
 }
 
+// Checks if a slot overlaps with an existing booking
 function slotOverlapsBooking(slotStart, slotEnd, booking) {
   return (
     toMin(slotStart) < toMin(booking.endTime) &&
@@ -90,17 +101,20 @@ function slotInBufferWindow(slotStart, slotEnd, bookingEndMin, bufferMinutes) {
   return sStart < bufEnd && sEnd > bufStart;
 }
 
+// Determines whether a slot is blocked by either a booking or its buffer time
 function slotBlockedByBooking(slotStart, slotEnd, booking, bufferMinutes) {
   if (slotOverlapsBooking(slotStart, slotEnd, booking)) return true;
   return slotInBufferWindow(slotStart, slotEnd, toMin(booking.endTime), bufferMinutes);
 }
 
+// Checks whether a requested booking range conflicts with an existing booking
 function rangeConflictsBooking(reqStart, reqEnd, booking, bufferMinutes) {
   const start = `${String(Math.floor(reqStart / 60)).padStart(2, "0")}:${String(reqStart % 60).padStart(2, "0")}`;
   const end = `${String(Math.floor(reqEnd / 60)).padStart(2, "0")}:${String(reqEnd % 60).padStart(2, "0")}`;
   return slotBlockedByBooking(start, end, booking, bufferMinutes);
 }
 
+// Detects MongoDB duplicate key errors
 function isDuplicateKey(err) {
   return err.code === 11000 || err.code === 11001;
 }
@@ -171,6 +185,8 @@ async function findRoomConflicts(roomId, date, startTime, endTime, bufferMinutes
   return bookings.find((b) => rangeConflictsBooking(reqStart, reqEnd, b, bufferMinutes));
 }
 
+
+// This function ensures that a user cannot book more than 4 hours (240 minutes) per day.
 async function reserveQuota(email, date, minutes) {
   if (minutes <= 0) return;
   const doc = await DailyQuota.findOneAndUpdate(
@@ -186,11 +202,13 @@ async function reserveQuota(email, date, minutes) {
   }
 }
 
+// Releases previously reserved booking quota when booking is cancelled or changed
 async function releaseQuota(email, date, minutes) {
   if (minutes <= 0) return;
   await DailyQuota.findOneAndUpdate({ email, date }, { $inc: { minutesUsed: -minutes } });
 }
 
+// Creates slot lock records for all slots occupied by a booking
 async function syncSlotLocksForBooking(booking) {
   await SlotLock.deleteMany({ booking: booking._id });
   const slots = getSlotStarts(booking.startTime, booking.endTime);
@@ -222,10 +240,12 @@ async function reconcileOrphanLocks(roomId, date) {
   }
 }
 
+// Deletes all slot locks associated with a booking
 async function deleteSlotLocks(bookingId) {
   await SlotLock.deleteMany({ booking: bookingId });
 }
 
+// Restores slot locks if an update operation fails and needs rollback
 async function restoreSlotLocks(roomId, date, startTime, endTime, bookingId) {
   try {
     await syncSlotLocksForBooking({
